@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAssembly POC - C to Wasm Addition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>WebAssembly POC</h1>
+        <p class="subtitle">High-performance C code executed in the browser via Wasm</p>
+
+        <div id="status" class="status-badge">Loading WebAssembly binary...</div>
+
+        <div class="input-group">
+            <div class="input-box">
+                <label for="num1">Input A</label>
+                <input type="number" id="num1" value="10" placeholder="Number A">
+            </div>
+            <div class="plus-sign">+</div>
+            <div class="input-box">
+                <label for="num2">Input B</label>
+                <input type="number" id="num2" value="5" placeholder="Number B">
+            </div>
+        </div>
+
+        <button id="calc-btn" disabled onclick="executeWasmAddition()">Calculate with C / WebAssembly</button>
+
+        <div class="result-card">
+            <h3>Calculated Result:</h3>
+            <div id="result" class="result-value">-</div>
+            <div id="execution-meta" class="explanation">Module status: Initializing...</div>
+        </div>
+    </div>
+
+    <!-- JavaScript integration with WebAssembly -->
+    <script>
+        // Global Emscripten Module configuration object
+        var Module = {
+            onRuntimeInitialized: function() {
+                console.log("Emscripten runtime initialized. Wasm bytecode instantiated.");
+                const statusElem = document.getElementById('status');
+                statusElem.textContent = "✓ WebAssembly Runtime Ready";
+                statusElem.classList.add('ready');
+                document.getElementById('calc-btn').disabled = false;
+                document.getElementById('execution-meta').textContent = "Execution path: C function add(int, int) exported as _add";
+            }
+        };
+
+        function executeWasmAddition() {
+            const val1 = parseInt(document.getElementById('num1').value, 10);
+            const val2 = parseInt(document.getElementById('num2').value, 10);
+
+            if (isNaN(val1) || isNaN(val2)) {
+                alert("Please enter valid integers in both inputs.");
+                return;
+            }
+
+            // Call the compiled C function exported through the WebAssembly module
+            // Using Emscripten's ccall helper or direct exported symbol _add
+            const startTime = performance.now();
+            const sum = Module._add(val1, val2);
+            const duration = (performance.now() - startTime).toFixed(3);
+
+            // Display results in DOM
+            document.getElementById('result').textContent = `${val1} + ${val2} = ${sum}`;
+            document.getElementById('execution-meta').innerHTML = 
+                `C Function <code>add(${val1}, ${val2})</code> returned <strong>${sum}</strong> in ${duration} ms.`;
+            
+            console.log(`[WebAssembly Execution] add(${val1}, ${val2}) = ${sum}`);
+        }
+    </script>
+
+    <!-- Emscripten generated glue script which fetches and instantiates add.wasm -->
+    <script src="add.js"></script>
+</body>
+</html>
